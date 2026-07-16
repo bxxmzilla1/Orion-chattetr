@@ -1381,30 +1381,100 @@ async function copyChatLink(chatId, { silentIfMissing = false } = {}) {
   return link;
 }
 
-async function createInboxChat() {
-  const name = window.prompt("Fan / contact name?");
-  if (!name || !name.trim()) return;
-  const username = window.prompt("Username (optional)?") || "";
-  setInboxStatus("Creating chat…");
+// New chat dialog (window.prompt is not supported in Electron)
+const newChatOverlay = document.getElementById("newChatOverlay");
+const newChatForm = document.getElementById("newChatForm");
+const newChatName = document.getElementById("newChatName");
+const newChatUsername = document.getElementById("newChatUsername");
+const newChatResult = document.getElementById("newChatResult");
+const newChatLink = document.getElementById("newChatLink");
+const newChatHint = document.getElementById("newChatHint");
+const newChatCancelBtn = document.getElementById("newChatCancelBtn");
+const newChatCreateBtn = document.getElementById("newChatCreateBtn");
+
+function openNewChatDialog() {
+  newChatName.value = "";
+  newChatUsername.value = "";
+  newChatForm.hidden = false;
+  newChatResult.hidden = true;
+  newChatHint.textContent = settings.siteUrl
+    ? ""
+    : "Tip: set the Chat page URL in Settings to get a share link.";
+  newChatCreateBtn.hidden = false;
+  newChatCreateBtn.disabled = false;
+  newChatCancelBtn.textContent = "Cancel";
+  newChatOverlay.hidden = false;
+  newChatName.focus();
+}
+
+function closeNewChatDialog() {
+  newChatOverlay.hidden = true;
+}
+
+async function submitNewChat() {
+  const name = newChatName.value.trim();
+  if (!name) {
+    newChatHint.textContent = "Give him a name first.";
+    newChatName.focus();
+    return;
+  }
+  newChatCreateBtn.disabled = true;
+  newChatHint.textContent = "Creating chat…";
   const res = await api.inbox.create({
-    name: name.trim(),
-    username: username.trim(),
+    name,
+    username: newChatUsername.value.trim(),
   });
   if (res.error) {
-    setInboxStatus(`⚠️ ${res.error}`);
+    newChatCreateBtn.disabled = false;
+    newChatHint.textContent = `⚠️ ${res.error}`;
     return;
   }
   inboxChats.unshift(res.chat);
   renderInboxChatList();
   await selectInboxChat(res.chat.id);
-  const link = await copyChatLink(res.chat.id, { silentIfMissing: true });
+
+  const link = chatShareLink(res.chat.id);
   if (link) {
-    window.prompt("Chat created! Share this link (copied to clipboard):", link);
+    try {
+      await navigator.clipboard.writeText(link);
+      newChatHint.textContent = "Chat created — link copied to clipboard.";
+    } catch {
+      newChatHint.textContent = "Chat created — copy the link below.";
+    }
+    newChatForm.hidden = true;
+    newChatResult.hidden = false;
+    newChatLink.value = link;
+    newChatCreateBtn.hidden = true;
+    newChatCancelBtn.textContent = "Done";
+    newChatLink.focus();
+    newChatLink.select();
   } else {
+    closeNewChatDialog();
     setInboxStatus(
       "Chat created. Set the Chat page URL in Settings to get a share link."
     );
   }
+}
+
+if (newChatOverlay) {
+  newChatCreateBtn.addEventListener("click", () => submitNewChat());
+  newChatCancelBtn.addEventListener("click", () => closeNewChatDialog());
+  newChatOverlay.addEventListener("click", (e) => {
+    if (e.target === newChatOverlay) closeNewChatDialog();
+  });
+  [newChatName, newChatUsername].forEach((el) =>
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitNewChat();
+      }
+      if (e.key === "Escape") closeNewChatDialog();
+    })
+  );
+}
+
+function createInboxChat() {
+  openNewChatDialog();
 }
 
 async function analyzeInboxChat() {

@@ -1,5 +1,4 @@
-import { isAdmin, unauthorized } from "../../../../lib/auth.js";
-import { getChat, deleteChat, getAppSetting } from "../../../../lib/store.js";
+import { getChat, getAppSetting } from "../../../../lib/store.js";
 
 export const dynamic = "force-dynamic";
 
@@ -26,16 +25,6 @@ export async function GET(request, { params }) {
         })),
       },
     });
-  } catch (err) {
-    return Response.json({ error: String(err.message || err) }, { status: 500 });
-  }
-}
-
-export async function DELETE(request, { params }) {
-  if (!isAdmin(request)) return unauthorized();
-  try {
-    await deleteChat(params.id);
-    return Response.json({ ok: true });
   } catch (err) {
     return Response.json({ error: String(err.message || err) }, { status: 500 });
   }

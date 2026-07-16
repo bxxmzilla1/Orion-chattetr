@@ -68,11 +68,12 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [attachment, setAttachment] = useState(null); // { file, kind, previewUrl }
-  const [typing, setTyping] = useState(false);
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef(null);
   const fileRef = useRef(null);
   const textRef = useRef(null);
+  const busyRef = useRef(false);
+  const countRef = useRef(0);
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -81,28 +82,38 @@ export default function ChatPage() {
     });
   }, []);
 
-  useEffect(() => {
-    let alive = true;
-    fetch(`/api/chats/${chatId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (!alive) return;
-        if (data.error) {
-          setError(data.error);
-          return;
-        }
-        setChat(data.chat);
-        setMessages(data.chat.messages || []);
-      })
-      .catch(() => alive && setError("Could not load this chat."));
-    return () => {
-      alive = false;
-    };
+  const refresh = useCallback(async () => {
+    const res = await fetch(`/api/chats/${chatId}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    setChat(data.chat);
+    // Don't clobber the optimistic bubble while a send is in flight.
+    if (!busyRef.current) {
+      const next = data.chat.messages || [];
+      if (next.length !== countRef.current) {
+        countRef.current = next.length;
+        setMessages(next);
+      }
+    }
+    return data.chat;
   }, [chatId]);
 
   useEffect(() => {
+    let alive = true;
+    refresh().catch(() => alive && setError("Could not load this chat."));
+    // Poll so her replies (sent from the operator app) appear live.
+    const timer = setInterval(() => {
+      refresh().catch(() => {});
+    }, 3500);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [refresh]);
+
+  useEffect(() => {
     scrollToBottom();
-  }, [messages, typing, scrollToBottom]);
+  }, [messages, scrollToBottom]);
 
   function pickFile() {
     fileRef.current?.click();
@@ -145,6 +156,7 @@ export default function ChatPage() {
     const content = text.trim();
     if ((!content && !attachment) || busy) return;
     setBusy(true);
+    busyRef.current = true;
     setError("");
 
     const localMedia = attachment
@@ -177,7 +189,6 @@ export default function ChatPage() {
         });
       }
 
-      setTyping(true);
       const res = await fetch(`/api/chats/${chatId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -186,23 +197,13 @@ export default function ChatPage() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      // Reveal her bubbles one by one with typing pauses so it feels human.
-      for (const bubble of data.bubbles || []) {
-        await new Promise((r) => setTimeout(r, bubble.delay || 900));
-        setMessages((m) => [
-          ...m,
-          {
-            role: "me",
-            content: bubble.text,
-            at: new Date().toISOString(),
-            media: null,
-          },
-        ]);
-      }
+      // Sync with the server transcript; her reply arrives via polling.
+      busyRef.current = false;
+      await refresh().catch(() => {});
     } catch (err) {
       setError(String(err.message || err));
     } finally {
-      setTyping(false);
+      busyRef.current = false;
       setBusy(false);
       textRef.current?.focus();
     }
@@ -262,15 +263,6 @@ export default function ChatPage() {
             </div>
           </div>
         ))}
-        {typing && (
-          <div className="bubble-row her">
-            <div className="typing">
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
-        )}
         {error && chat && <div className="chat-note">{error}</div>}
       </div>
 

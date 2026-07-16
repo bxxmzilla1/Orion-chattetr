@@ -1226,7 +1226,21 @@ function renderInboxTranscript(chat) {
   for (const m of chat.messages || []) {
     const bubble = document.createElement("div");
     bubble.className = `inbox-msg ${m.role === "me" ? "me" : "fan"}`;
-    bubble.textContent = m.content || "";
+    if (m.media?.url) {
+      const media =
+        m.media.kind === "video"
+          ? document.createElement("video")
+          : document.createElement("img");
+      media.src = m.media.url;
+      if (m.media.kind === "video") media.controls = true;
+      media.className = "inbox-msg-media";
+      bubble.appendChild(media);
+    }
+    if (m.content) {
+      const text = document.createElement("div");
+      text.textContent = m.content;
+      bubble.appendChild(text);
+    }
     inboxTranscript.appendChild(bubble);
   }
   inboxTranscript.scrollTop = inboxTranscript.scrollHeight;
@@ -1503,6 +1517,48 @@ if (api.inbox?.onSyncProgress) {
     }
   });
 }
+
+// Auto-poll for new fan messages arriving from the web chat pages.
+const INBOX_POLL_MS = 8000;
+let inboxPolling = false;
+setInterval(async () => {
+  if (!inboxLoaded || inboxPolling) return;
+  const inboxView = document.getElementById("view-inbox");
+  if (!inboxView || !inboxView.classList.contains("active")) return;
+  inboxPolling = true;
+  try {
+    const res = await api.inbox.list();
+    if (res.error) return;
+    const fresh = res.chats || [];
+    const prevSelected = inboxChats.find((c) => c.id === inboxSelectedId);
+    const nextSelected = fresh.find((c) => c.id === inboxSelectedId);
+    // The list query has no messages/suggestion — keep the loaded copy of the
+    // open chat so its transcript doesn't blank out between polls.
+    inboxChats = fresh.map((c) =>
+      c.id === inboxSelectedId && prevSelected
+        ? {
+            ...prevSelected,
+            unread: c.unread,
+            lastMessage: c.lastMessage,
+            lastMessageAt: c.lastMessageAt,
+          }
+        : c
+    );
+    renderInboxChatList();
+    if (
+      nextSelected &&
+      prevSelected &&
+      String(nextSelected.lastMessageAt || "") !==
+        String(prevSelected.lastMessageAt || "")
+    ) {
+      await selectInboxChat(inboxSelectedId);
+    }
+  } catch {
+    // transient network errors — try again next tick
+  } finally {
+    inboxPolling = false;
+  }
+}, INBOX_POLL_MS);
 
 // ---------------------------------------------------------------------------
 // Init

@@ -1500,10 +1500,20 @@ function inboxMemoryKey(chatId) {
 }
 
 function historyForGrok(messages) {
-  return (messages || []).map((m) => ({
-    role: m.role === "me" ? "assistant" : "user",
-    content: String(m.content || ""),
-  }));
+  return (messages || []).map((m) => {
+    const role = m.role === "me" ? "assistant" : "user";
+    // Fan media gets described by Grok vision on the web side; feed that
+    // description in so the chatbot "saw" what he sent.
+    if (m.media && m.media.description) {
+      const label = m.media.kind === "video" ? "a video" : "a photo";
+      const caption = m.content ? `He also wrote: "${m.content}"\n\n` : "";
+      return {
+        role,
+        content: `[He just sent you ${label}.]\n${caption}What you can see in it:\n${m.media.description}`,
+      };
+    }
+    return { role, content: String(m.content || "") };
+  });
 }
 
 const INBOX_REPLY_INSTRUCTION = `Now draft the creator's next message for this chat.

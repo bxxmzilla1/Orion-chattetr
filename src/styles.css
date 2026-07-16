@@ -455,6 +455,14 @@ body {
   gap: 8px;
   flex-shrink: 0;
 }
+.inbox-msg-media {
+  display: block;
+  max-width: 260px;
+  max-height: 260px;
+  border-radius: 10px;
+  margin-bottom: 6px;
+  object-fit: cover;
+}
 .inbox-transcript {
   flex: 1;
   min-height: 0;

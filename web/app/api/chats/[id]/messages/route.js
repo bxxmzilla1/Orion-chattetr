@@ -1,13 +1,13 @@
-import { getChat } from "../../../../../lib/store.js";
+import { getChat, upsertChat, normalizeMessage } from "../../../../../lib/store.js";
 import { describeMedia } from "../../../../../lib/grok.js";
-import { generateReply } from "../../../../../lib/reply.js";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300; // Grok reply + journal update can take a while
+export const maxDuration = 120; // Grok vision on media can take a while
 
 // Public: a visitor sends a message (text and/or media). The server analyzes
-// media with Grok vision, generates the girl's reply, saves everything, and
-// returns the reply bubbles with human typing delays.
+// media with Grok vision (so the operator's chatbot understands it), stores
+// the message, and bumps the unread counter. Replies come from the Electron
+// app — the chat page polls the transcript to pick them up.
 export async function POST(request, { params }) {
   try {
     const chat = await getChat(params.id);
@@ -28,12 +28,16 @@ export async function POST(request, { params }) {
       let description = "";
       const sources = frames.length ? frames : mediaIn.url ? [mediaIn.url] : [];
       if (sources.length) {
-        const result = await describeMedia({
-          kind,
-          imageUrls: sources,
-          fileName: mediaIn.fileName || "",
-        });
-        if (result.description) description = result.description;
+        try {
+          const result = await describeMedia({
+            kind,
+            imageUrls: sources,
+            fileName: mediaIn.fileName || "",
+          });
+          if (result.description) description = result.description;
+        } catch {
+          // No description is fine — the message still gets stored.
+        }
       }
       media = {
         kind,
@@ -43,12 +47,23 @@ export async function POST(request, { params }) {
       };
     }
 
-    const bubbles = await generateReply({
-      chatId: params.id,
-      fanMessage: { content, media },
+    const msg = normalizeMessage({
+      role: "fan",
+      content,
+      at: new Date().toISOString(),
+      media,
     });
+    if (!msg) return Response.json({ error: "Empty message" }, { status: 400 });
 
-    return Response.json({ bubbles });
+    chat.messages = Array.isArray(chat.messages) ? chat.messages : [];
+    chat.messages.push(msg);
+    chat.lastMessage =
+      content || (media?.kind === "video" ? "sent a video" : "sent a photo");
+    chat.lastMessageAt = msg.at;
+    chat.unread = (Number(chat.unread) || 0) + 1;
+    await upsertChat(chat);
+
+    return Response.json({ ok: true });
   } catch (err) {
     return Response.json({ error: String(err.message || err) }, { status: 500 });
   }

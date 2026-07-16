@@ -1,21 +1,21 @@
 # Orion Web
 
-The Orion companion as a standalone web app for Vercel. Create a chat, share
-the link, and visitors chat with her in the browser — texts, photos, and
-videos. Uses the same Supabase project as the Electron app, so web chats also
-show up in the desktop Inbox with their journals.
+The public chat pages for the Orion desktop app. You create chats and links in
+the Electron app; Vercel just hosts the page fans open. Everything they send
+lands in the same Supabase project, so it shows up in the desktop Inbox where
+you analyze and send her replies.
 
 ## How it works
 
-- `/` — admin console (passcode-protected). Create chats, copy share links,
-  delete chats, edit the default persona.
-- `/c/<chatId>` — the public chat page you share. Visitors text her and send
-  photos/videos; Grok "watches" the media, she reacts in character, and a
-  psychological journal builds automatically in `memory_profiles`
-  (key `inbox:<chatId>`).
+- `/c/<chatId>` — the chat page you share. Fans text her and send
+  photos/videos. Messages are stored in Supabase and bump the unread counter;
+  the desktop Inbox picks them up automatically.
+- Replies are NOT generated here. You reply from the Electron app (Analyze →
+  Send), and the chat page polls the transcript so her messages appear live.
 - Media goes straight from the browser to Supabase Storage via signed upload
-  URLs (no Vercel size limits). Videos are sampled into frames client-side so
-  Grok vision can describe them.
+  URLs. Videos are sampled into frames client-side and described with Grok
+  vision so the chatbot in the desktop app knows what he sent.
+- `/` is intentionally empty — there is no web admin.
 
 ## Setup
 
@@ -24,9 +24,8 @@ show up in the desktop Inbox with their journals.
    storage bucket).
 2. **Env vars** — copy `.env.example` to `.env.local` and fill in:
    - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
-   - `XAI_API_KEY` (and optionally `XAI_MODEL`, default `grok-4`)
-   - `ADMIN_PASSCODE` — the passcode for the admin page
-   - `NEXT_PUBLIC_SITE_URL` — optional, e.g. `https://yourapp.vercel.app`
+   - `XAI_API_KEY` (and optionally `XAI_MODEL`, default `grok-4`) — only used
+     to describe media fans send
 3. **Run locally**
 
 ```bash
@@ -35,20 +34,12 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000, enter your passcode, create a chat, open the link.
-
 ## Deploy to Vercel
 
-```bash
-cd web
-npx vercel
-```
+Push the repo to GitHub and import it in the Vercel dashboard — set the
+**Root Directory** to `web`. Add the environment variables in
+Project Settings → Environment Variables, then deploy.
 
-Or push the repo to GitHub and import it in the Vercel dashboard — set the
-**Root Directory** to `web`. Add the same environment variables in
-Project Settings → Environment Variables, then deploy. Share links look like
+Then in the Electron app, open Settings and paste the deployment URL into
+**Chat page URL**. Every "New chat" now copies a share link like
 `https://yourapp.vercel.app/c/<chatId>`.
-
-Note: reply generation calls Grok twice (reply + journal update), which can
-take 20–60s. On Vercel's free plan functions cap at 60s of execution — if
-replies get cut off, upgrade the plan or lower `maxDuration` expectations.

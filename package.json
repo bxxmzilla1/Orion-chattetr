@@ -1,0 +1,19 @@
+{
+  "name": "orion",
+  "version": "1.0.0",
+  "description": "Orion - a personal video companion chatbot powered by Grok",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.1"
+  },
+  "dependencies": {
+    "mammoth": "^1.12.0",
+    "pdf-parse": "^2.4.5"
+  }
+}

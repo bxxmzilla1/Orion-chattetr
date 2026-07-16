@@ -1,0 +1,19 @@
+# dependencies / build
+node_modules/
+web/node_modules/
+web/.next/
+web/.vercel/
+
+# secrets
+.env
+.env.local
+web/.env
+web/.env.local
+settings.json
+
+# private training material (not code)
+Chatting Data/
+
+# misc
+npm-debug.log*
+Thumbs.db

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' data: https: orion-media:; media-src 'self' data: https: orion-media:; style-src 'self' 'unsafe-inline'; script-src 'self';"
+    />
+    <title>Orion</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-orb"></div>
+          <div class="brand-text">
+            <span class="brand-name">Orion</span>
+            <span class="brand-sub">your companion</span>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-item active" data-view="chat">
+            <span class="nav-icon">💬</span> Chat
+          </button>
+          <button class="nav-item" data-view="inbox">
+            <span class="nav-icon">📥</span> Inbox
+          </button>
+          <button class="nav-item" data-view="persona">
+            <span class="nav-icon">🎭</span> Persona
+          </button>
+          <button class="nav-item" data-view="settings">
+            <span class="nav-icon">⚙️</span> Settings
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div id="statusDot" class="status-dot offline"></div>
+          <span id="statusText">API key needed</span>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main class="main">
+        <!-- CHAT VIEW -->
+        <section class="view active" id="view-chat">
+          <header class="view-header row">
+            <div>
+              <h1>Chat with Orion</h1>
+              <p class="muted">
+                Orion remembers what you share and wants to get to know you.
+              </p>
+            </div>
+            <button class="ghost" id="resetChatBtn" title="Clear chat and forgotten memory">
+              Reset chat
+            </button>
+          </header>
+          <div class="chat-window" id="chatWindow"></div>
+          <div class="attach-preview" id="attachPreview" hidden></div>
+          <form class="chat-input" id="chatForm">
+            <button
+              type="button"
+              class="ghost attach-btn"
+              id="attachMediaBtn"
+              title="Send photo or video"
+            >
+              ＋
+            </button>
+            <textarea
+              id="chatInput"
+              placeholder="Say something to Orion… (or attach a photo/video)"
+              rows="1"
+            ></textarea>
+            <button type="submit" id="sendBtn" title="Send">➤</button>
+          </form>
+        </section>
+
+        <!-- INBOX VIEW — platform chats (analyze / send / sync) -->
+        <section class="view" id="view-inbox">
+          <header class="view-header row">
+            <div>
+              <h1>Inbox</h1>
+              <p class="muted">
+                Your chats on Orion. Analyze into Mind Reader, draft the next
+                reply, and send — all stored in your database.
+              </p>
+            </div>
+            <div class="inbox-header-actions">
+              <button class="ghost" id="inboxNewBtn">New chat</button>
+              <button class="ghost" id="inboxSyncBtn">Sync</button>
+            </div>
+          </header>
+
+          <div class="inbox-status muted small" id="inboxStatus"></div>
+
+          <div class="inbox-layout">
+            <div class="inbox-chat-list" id="inboxChatList"></div>
+
+            <div class="inbox-detail">
+              <div class="inbox-empty" id="inboxEmpty">
+                Select a chat, or create a new one to get started.
+              </div>
+              <div class="inbox-detail-inner" id="inboxDetail" hidden>
+                <div class="inbox-detail-header">
+                  <div>
+                    <h2 id="inboxDetailName">—</h2>
+                    <p class="muted small" id="inboxDetailUser"></p>
+                  </div>
+                  <button class="primary" id="inboxAnalyzeBtn">
+                    Analyze chat
+                  </button>
+                </div>
+
+                <div class="inbox-transcript" id="inboxTranscript"></div>
+
+                <form class="inbox-fan-form" id="inboxFanForm">
+                  <input
+                    type="text"
+                    id="inboxFanInput"
+                    placeholder="Type a message as the fan…"
+                    autocomplete="off"
+                  />
+                  <button type="submit" class="ghost small">Add</button>
+                </form>
+
+                <div class="inbox-suggestion" id="inboxSuggestionBox" hidden>
+                  <div class="inbox-suggestion-header">
+                    <h3>Next best reply</h3>
+                    <button class="ghost small" id="inboxRegenerateBtn">
+                      Regenerate
+                    </button>
+                  </div>
+                  <p class="inbox-sug-text" id="inboxSuggestionText"></p>
+                  <button class="primary" id="inboxSendBtn">Send</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PERSONA VIEW -->
+        <section class="view" id="view-persona">
+          <header class="view-header">
+            <h1>Persona</h1>
+            <p class="muted">
+              Describe the personality you want Orion to have. Orion reads and
+              analyzes this to mold itself to your persona — tone, quirks,
+              values, speech style, everything.
+            </p>
+          </header>
+          <div class="persona-card">
+            <label>Build a persona from a folder</label>
+            <div class="dropzone" id="dropzone">
+              <div class="dropzone-inner">
+                <span class="dropzone-icon">📁</span>
+                <p>
+                  Choose a folder with all your reference docs, or
+                  <button type="button" class="link-btn" id="browseFilesBtn">
+                    browse
+                  </button>
+                </p>
+                <span class="hint">
+                  Scans PDF, DOCX, TXT, MD (and subfolders). Persona prompt is
+                  saved locally automatically.
+                </span>
+              </div>
+            </div>
+            <div class="folder-picked" id="folderPicked" hidden>
+              <span class="folder-path" id="folderPathLabel"></span>
+              <span class="folder-count" id="folderCountLabel"></span>
+              <button type="button" class="ghost small" id="clearFolderBtn">
+                Clear folder
+              </button>
+            </div>
+            <div class="gen-row">
+              <button class="primary" id="generatePersonaBtn" disabled>
+                ✨ Analyze &amp; generate persona
+              </button>
+              <span class="gen-status" id="genStatus"></span>
+            </div>
+
+            <label>Persona description</label>
+            <textarea
+              id="personaInput"
+              placeholder="Example: You're Luna, a laid-back surfer girl from California in her mid-20s. You're witty and a little sarcastic, but deeply caring underneath. You love the ocean, indie music, and late-night talks. You use casual slang, tease playfully, and never give corporate-sounding answers…"
+            ></textarea>
+            <div class="persona-footer">
+              <span class="hint" id="personaHint">
+                Saved locally on this machine. Leave empty for the default
+                personality.
+              </span>
+              <div class="persona-actions">
+                <button class="ghost" id="clearPersonaBtn">Clear</button>
+                <button class="primary" id="savePersonaBtn">
+                  Save persona
+                </button>
+              </div>
+            </div>
+            <p class="save-status" id="personaStatus"></p>
+          </div>
+          <p class="muted small">
+            Tip: the more specific you are (name, age, vibe, way of speaking,
+            likes and dislikes), the more accurately Orion becomes that
+            persona. Changes apply to your next message.
+          </p>
+        </section>
+
+        <!-- SETTINGS VIEW -->
+        <section class="view" id="view-settings">
+          <header class="view-header">
+            <h1>Settings</h1>
+            <p class="muted">Connect Orion to the Grok (x.ai) API.</p>
+          </header>
+          <div class="settings-card">
+            <label>Your name</label>
+            <input
+              type="text"
+              id="userNameInput"
+              placeholder="What should Orion call you?"
+            />
+
+            <label>Grok API key (x.ai)</label>
+            <input
+              type="password"
+              id="apiKeyInput"
+              placeholder="xai-…"
+              autocomplete="off"
+            />
+            <p class="hint" id="apiKeyHint"></p>
+
+            <label>Supabase project URL</label>
+            <input
+              type="text"
+              id="supabaseUrlInput"
+              placeholder="https://xxxx.supabase.co"
+              autocomplete="off"
+            />
+            <label>Supabase key (service role)</label>
+            <input
+              type="password"
+              id="supabaseKeyInput"
+              placeholder="eyJ… (service_role or anon key)"
+              autocomplete="off"
+            />
+            <p class="hint" id="supabaseHint">
+              Stores Inbox chats and Mind Reader journals in the cloud. Run
+              supabase-schema.sql in your Supabase project first.
+            </p>
+
+            <label>Model</label>
+            <select id="modelInput">
+              <option value="grok-4">grok-4</option>
+              <option value="grok-4-latest">grok-4-latest</option>
+              <option value="grok-3">grok-3</option>
+              <option value="grok-3-latest">grok-3-latest</option>
+              <option value="grok-3-mini">grok-3-mini</option>
+              <option value="grok-2-latest">grok-2-latest</option>
+            </select>
+
+            <button class="primary" id="saveSettingsBtn">Save settings</button>
+            <p class="save-status" id="saveStatus"></p>
+          </div>
+          <p class="muted small">
+            Get an API key at console.x.ai. Your key is stored locally on this
+            machine (settings + browser localStorage).
+          </p>
+        </section>
+      </main>
+
+      <!-- Sub Info (right) -->
+      <aside class="sub-info" id="subInfoPanel">
+        <div class="sub-info-header">
+          <div class="sub-info-title-row">
+            <h2>Mind Reader</h2>
+            <button
+              class="ghost small"
+              id="clearJournalBtn"
+              title="Erase this journal"
+            >
+              Clear
+            </button>
+          </div>
+          <p class="muted" id="subInfoSubtitle">Her journal — every little detail he drops</p>
+        </div>
+        <div class="sub-info-status" id="subInfoStatus">Waiting for details…</div>
+        <div class="sub-info-list" id="subInfoList"></div>
+      </aside>
+    </div>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

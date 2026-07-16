@@ -1381,100 +1381,59 @@ async function copyChatLink(chatId, { silentIfMissing = false } = {}) {
   return link;
 }
 
-// New chat dialog (window.prompt is not supported in Electron)
+// New chat: one click creates the chat and hands over the share link.
 const newChatOverlay = document.getElementById("newChatOverlay");
-const newChatForm = document.getElementById("newChatForm");
-const newChatName = document.getElementById("newChatName");
-const newChatUsername = document.getElementById("newChatUsername");
-const newChatResult = document.getElementById("newChatResult");
 const newChatLink = document.getElementById("newChatLink");
 const newChatHint = document.getElementById("newChatHint");
-const newChatCancelBtn = document.getElementById("newChatCancelBtn");
-const newChatCreateBtn = document.getElementById("newChatCreateBtn");
-
-function openNewChatDialog() {
-  newChatName.value = "";
-  newChatUsername.value = "";
-  newChatForm.hidden = false;
-  newChatResult.hidden = true;
-  newChatHint.textContent = settings.siteUrl
-    ? ""
-    : "Tip: set the Chat page URL in Settings to get a share link.";
-  newChatCreateBtn.hidden = false;
-  newChatCreateBtn.disabled = false;
-  newChatCancelBtn.textContent = "Cancel";
-  newChatOverlay.hidden = false;
-  newChatName.focus();
-}
+const newChatDoneBtn = document.getElementById("newChatDoneBtn");
 
 function closeNewChatDialog() {
   newChatOverlay.hidden = true;
 }
 
-async function submitNewChat() {
-  const name = newChatName.value.trim();
-  if (!name) {
-    newChatHint.textContent = "Give him a name first.";
-    newChatName.focus();
-    return;
-  }
-  newChatCreateBtn.disabled = true;
-  newChatHint.textContent = "Creating chat…";
-  const res = await api.inbox.create({
-    name,
-    username: newChatUsername.value.trim(),
-  });
-  if (res.error) {
-    newChatCreateBtn.disabled = false;
-    newChatHint.textContent = `⚠️ ${res.error}`;
-    return;
-  }
-  inboxChats.unshift(res.chat);
-  renderInboxChatList();
-  await selectInboxChat(res.chat.id);
-
-  const link = chatShareLink(res.chat.id);
-  if (link) {
-    try {
-      await navigator.clipboard.writeText(link);
-      newChatHint.textContent = "Chat created — link copied to clipboard.";
-    } catch {
-      newChatHint.textContent = "Chat created — copy the link below.";
-    }
-    newChatForm.hidden = true;
-    newChatResult.hidden = false;
-    newChatLink.value = link;
-    newChatCreateBtn.hidden = true;
-    newChatCancelBtn.textContent = "Done";
-    newChatLink.focus();
-    newChatLink.select();
-  } else {
-    closeNewChatDialog();
-    setInboxStatus(
-      "Chat created. Set the Chat page URL in Settings to get a share link."
-    );
-  }
-}
-
 if (newChatOverlay) {
-  newChatCreateBtn.addEventListener("click", () => submitNewChat());
-  newChatCancelBtn.addEventListener("click", () => closeNewChatDialog());
+  newChatDoneBtn.addEventListener("click", () => closeNewChatDialog());
   newChatOverlay.addEventListener("click", (e) => {
     if (e.target === newChatOverlay) closeNewChatDialog();
   });
-  [newChatName, newChatUsername].forEach((el) =>
-    el.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        submitNewChat();
-      }
-      if (e.key === "Escape") closeNewChatDialog();
-    })
-  );
 }
 
-function createInboxChat() {
-  openNewChatDialog();
+let creatingInboxChat = false;
+async function createInboxChat() {
+  if (creatingInboxChat) return;
+  creatingInboxChat = true;
+  setInboxStatus("Creating chat…");
+  try {
+    const res = await api.inbox.create({ name: "New chat", username: "" });
+    if (res.error) {
+      setInboxStatus(`⚠️ ${res.error}`);
+      return;
+    }
+    inboxChats.unshift(res.chat);
+    renderInboxChatList();
+    await selectInboxChat(res.chat.id);
+
+    const link = chatShareLink(res.chat.id);
+    if (!link) {
+      setInboxStatus(
+        "Chat created. Set the Chat page URL in Settings to get a share link."
+      );
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      newChatHint.textContent = "";
+    } catch {
+      newChatHint.textContent = "Couldn't auto-copy — copy it manually above.";
+    }
+    newChatLink.value = link;
+    newChatOverlay.hidden = false;
+    newChatLink.focus();
+    newChatLink.select();
+    setInboxStatus("Chat created ✓");
+  } finally {
+    creatingInboxChat = false;
+  }
 }
 
 async function analyzeInboxChat() {

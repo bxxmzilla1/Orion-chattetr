@@ -455,6 +455,9 @@ body {
   gap: 8px;
   flex-shrink: 0;
 }
+.modal-overlay[hidden] {
+  display: none;
+}
 .modal-overlay {
   position: fixed;
   inset: 0;

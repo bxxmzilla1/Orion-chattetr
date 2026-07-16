@@ -306,36 +306,15 @@
       </aside>
     </div>
 
-    <!-- New chat dialog -->
+    <!-- New chat link dialog -->
     <div class="modal-overlay" id="newChatOverlay" hidden>
       <div class="modal-card">
-        <h2>New chat</h2>
-        <div id="newChatForm">
-          <label>His name</label>
-          <input
-            type="text"
-            id="newChatName"
-            placeholder="e.g. Jake"
-            autocomplete="off"
-          />
-          <label>Username (optional)</label>
-          <input
-            type="text"
-            id="newChatUsername"
-            placeholder="e.g. jake92"
-            autocomplete="off"
-          />
-        </div>
-        <div id="newChatResult" hidden>
-          <label>Share this link — it's already copied</label>
-          <input type="text" id="newChatLink" readonly />
-        </div>
+        <h2>Chat link ready</h2>
+        <label>Share this link — it's already copied</label>
+        <input type="text" id="newChatLink" readonly />
         <p class="hint" id="newChatHint"></p>
         <div class="modal-actions">
-          <button class="ghost" id="newChatCancelBtn">Cancel</button>
-          <button class="primary" id="newChatCreateBtn">
-            Create + copy link
-          </button>
+          <button class="primary" id="newChatDoneBtn">Done</button>
         </div>
       </div>
     </div>

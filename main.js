@@ -84,6 +84,7 @@ function getSettings() {
     personaFolder: s.personaFolder || "",
     supabaseUrl: s.supabaseUrl || "",
     supabaseKey: s.supabaseKey || "",
+    siteUrl: s.siteUrl || "",
   };
 }
 
@@ -834,6 +835,7 @@ ipcMain.handle("settings:get", () => {
     supabaseUrl: s.supabaseUrl || "",
     hasSupabaseKey: Boolean(s.supabaseKey),
     supabaseReady: sbConfigured(),
+    siteUrl: s.siteUrl || "",
   };
 });
 
@@ -849,6 +851,7 @@ ipcMain.handle(
       personaFolder,
       supabaseUrl,
       supabaseKey,
+      siteUrl,
     }
   ) => {
     const s = getSettings();
@@ -861,6 +864,8 @@ ipcMain.handle(
       s.supabaseUrl = supabaseUrl.trim().replace(/\/+$/, "");
     if (typeof supabaseKey === "string" && supabaseKey.trim())
       s.supabaseKey = supabaseKey.trim();
+    if (typeof siteUrl === "string")
+      s.siteUrl = siteUrl.trim().replace(/\/+$/, "");
     // Drop legacy OnlyFans key if it was still sitting in settings.json.
     if ("ofApiKey" in s) delete s.ofApiKey;
     await writeJson(settingsFile, s);
@@ -873,6 +878,7 @@ ipcMain.handle(
       supabaseUrl: s.supabaseUrl || "",
       hasSupabaseKey: Boolean(s.supabaseKey),
       supabaseReady: sbConfigured(),
+      siteUrl: s.siteUrl || "",
     };
   }
 );

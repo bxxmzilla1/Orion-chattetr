@@ -449,6 +449,12 @@ body {
   font-size: 16px;
   margin: 0;
 }
+.inbox-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
 .inbox-transcript {
   flex: 1;
   min-height: 0;

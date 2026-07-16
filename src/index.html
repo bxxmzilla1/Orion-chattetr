@@ -108,9 +108,14 @@
                     <h2 id="inboxDetailName">—</h2>
                     <p class="muted small" id="inboxDetailUser"></p>
                   </div>
-                  <button class="primary" id="inboxAnalyzeBtn">
-                    Analyze chat
-                  </button>
+                  <div class="inbox-detail-actions">
+                    <button class="ghost" id="inboxLinkBtn" title="Copy the public chat page link for this chat">
+                      Copy link
+                    </button>
+                    <button class="primary" id="inboxAnalyzeBtn">
+                      Analyze chat
+                    </button>
+                  </div>
                 </div>
 
                 <div class="inbox-transcript" id="inboxTranscript"></div>
@@ -247,6 +252,18 @@
             <p class="hint" id="supabaseHint">
               Stores Inbox chats and Mind Reader journals in the cloud. Run
               supabase-schema.sql in your Supabase project first.
+            </p>
+
+            <label>Chat page URL (your Vercel deployment)</label>
+            <input
+              type="text"
+              id="siteUrlInput"
+              placeholder="https://yourapp.vercel.app"
+              autocomplete="off"
+            />
+            <p class="hint">
+              Used to build share links: &lt;url&gt;/c/&lt;chatId&gt;. Deploy
+              the web folder to Vercel, then paste the deployment URL here.
             </p>
 
             <label>Model</label>

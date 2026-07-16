@@ -39,6 +39,7 @@ const saveStatus = document.getElementById("saveStatus");
 const supabaseUrlInput = document.getElementById("supabaseUrlInput");
 const supabaseKeyInput = document.getElementById("supabaseKeyInput");
 const supabaseHint = document.getElementById("supabaseHint");
+const siteUrlInput = document.getElementById("siteUrlInput");
 
 // Persona
 const personaInput = document.getElementById("personaInput");
@@ -877,6 +878,7 @@ async function loadSettings() {
 
   supabaseUrlInput.value = settings.supabaseUrl || "";
   updateSupabaseHint();
+  if (siteUrlInput) siteUrlInput.value = settings.siteUrl || "";
 
   if (settings.personaFolder) {
     await setPersonaFolder(settings.personaFolder, { persist: false });
@@ -913,6 +915,7 @@ saveSettingsBtn.addEventListener("click", async () => {
     userName: userNameInput.value,
     model: modelInput.value,
     supabaseUrl: supabaseUrlInput.value.trim(),
+    siteUrl: siteUrlInput ? siteUrlInput.value.trim() : undefined,
   };
   const typedKey = apiKeyInput.value.trim();
   if (typedKey) payload.apiKey = typedKey;
@@ -1135,6 +1138,7 @@ const inboxDetail = document.getElementById("inboxDetail");
 const inboxDetailName = document.getElementById("inboxDetailName");
 const inboxDetailUser = document.getElementById("inboxDetailUser");
 const inboxTranscript = document.getElementById("inboxTranscript");
+const inboxLinkBtn = document.getElementById("inboxLinkBtn");
 const inboxAnalyzeBtn = document.getElementById("inboxAnalyzeBtn");
 const inboxSuggestionBox = document.getElementById("inboxSuggestionBox");
 const inboxSuggestionText = document.getElementById("inboxSuggestionText");
@@ -1338,6 +1342,31 @@ async function syncInbox() {
   if (inboxSelectedId) await selectInboxChat(inboxSelectedId);
 }
 
+function chatShareLink(chatId) {
+  const base = (settings.siteUrl || "").replace(/\/+$/, "");
+  if (!base) return "";
+  return `${base}/c/${chatId}`;
+}
+
+async function copyChatLink(chatId, { silentIfMissing = false } = {}) {
+  const link = chatShareLink(chatId);
+  if (!link) {
+    if (!silentIfMissing) {
+      setInboxStatus(
+        "⚠️ Set the Chat page URL in Settings first (your Vercel deployment)."
+      );
+    }
+    return "";
+  }
+  try {
+    await navigator.clipboard.writeText(link);
+    setInboxStatus(`Link copied ✓ — ${link}`);
+  } catch {
+    setInboxStatus(link);
+  }
+  return link;
+}
+
 async function createInboxChat() {
   const name = window.prompt("Fan / contact name?");
   if (!name || !name.trim()) return;
@@ -1354,7 +1383,14 @@ async function createInboxChat() {
   inboxChats.unshift(res.chat);
   renderInboxChatList();
   await selectInboxChat(res.chat.id);
-  setInboxStatus("Chat created.");
+  const link = await copyChatLink(res.chat.id, { silentIfMissing: true });
+  if (link) {
+    window.prompt("Chat created! Share this link (copied to clipboard):", link);
+  } else {
+    setInboxStatus(
+      "Chat created. Set the Chat page URL in Settings to get a share link."
+    );
+  }
 }
 
 async function analyzeInboxChat() {
@@ -1423,6 +1459,11 @@ if (inboxNewBtn) {
 }
 if (inboxAnalyzeBtn) {
   inboxAnalyzeBtn.addEventListener("click", () => analyzeInboxChat());
+}
+if (inboxLinkBtn) {
+  inboxLinkBtn.addEventListener("click", () => {
+    if (inboxSelectedId) copyChatLink(inboxSelectedId);
+  });
 }
 if (inboxRegenerateBtn) {
   inboxRegenerateBtn.addEventListener("click", () => analyzeInboxChat());
